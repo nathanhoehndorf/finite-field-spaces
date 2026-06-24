@@ -12,7 +12,7 @@ This suite is explicitly optimized to test multi-ball configurations, asymmetric
 ## Installation
 Clone this repository locally and install it in editable mode:
 ```bash
-git clone [https://github.com/yourusername/finite-field-spaces.git](https://github.com/yourusername/finite-field-spaces.git)
+git clone https://github.com/nathanhoehndorf/finite-field-spaces
 cd finite-field-spaces
 pip install -e
 ```
