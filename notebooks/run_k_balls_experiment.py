@@ -49,7 +49,7 @@ def run_experiments(ns=(5,6), Ks=(4,5,6,7,8,9), trials=10000, radius=1, p=2, sho
 
 if __name__ == '__main__':
     out_dir = Path(__file__).parent
-    exp_results, zero_holes = run_experiments(ns=(6,), Ks=(4,5,6,7,8,9), trials=10000, radius=2, p=2, show_progress=True)
+    exp_results, zero_holes = run_experiments(ns=(16,), Ks=(3,), trials=10000, radius=2, p=2, show_progress=True)
     summary = {}
     for n, Ks_res in exp_results.items():
         summary[n] = {}
