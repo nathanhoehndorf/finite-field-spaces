@@ -1,17 +1,55 @@
+from itertools import product
+from typing import Optional, Tuple
+
 import numpy as np
 
-def compute_sumset(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
+from src.fwht_operators import compute_sumset_fwht
+
+
+def _compute_sumset_original(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
     """
     Computes the unique elements of the sumset S + S over F_p
-    Optimized via broadcasting
+    using the direct broadcast-based approach.
     """
     if len(set_elements) == 0:
         return np.empty((0, set_elements.shape[1]), dtype=np.int8)
-    
+
     broadcasted_sum = (set_elements[:, np.newaxis, :] + set_elements[np.newaxis, :, :]) % p
     reshaped_sums = broadcasted_sum.reshape(-1, set_elements.shape[1])
-    
+
     return np.unique(reshaped_sums, axis=0)
+
+
+def compute_sumset(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
+    """
+    Computes the unique elements of the sumset S + S over F_p.
+    For binary fields (p=2), this uses the FWHT implementation.
+    """
+    if p != 2:
+        return _compute_sumset_original(set_elements, p)
+
+    return compute_sumset_fwht(set_elements)
+
+def compare_sumset_methods(n: int = 6, subset_size: int = 10, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Generates a random subset of F_2^n and compares the FWHT-based sumset against
+    the original direct implementation.
+    """
+    if n < 1:
+        raise ValueError("n must be at least 1")
+    if subset_size < 1:
+        raise ValueError("subset_size must be at least 1")
+
+    universe = np.array(list(product([0, 1], repeat=n)), dtype=np.int8)
+    rng = np.random.default_rng(seed)
+    subset_indices = rng.choice(len(universe), size=subset_size, replace=False)
+    subset = universe[subset_indices]
+
+    fwht_sumset = compute_sumset(subset, p=2)
+    original_sumset = _compute_sumset_original(subset, p=2)
+
+    return subset, fwht_sumset, original_sumset
+
 
 def find_maximum_subspace_dimension(sumset: np.ndarray, p: int = 2) -> int:
     """
