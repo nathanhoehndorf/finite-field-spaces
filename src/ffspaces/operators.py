@@ -53,56 +53,15 @@ def compare_sumset_methods(n: int = 6, subset_size: int = 10, seed: Optional[int
     return subset, fwht_sumset, original_sumset
 
 
-def find_maximum_subspace_dimension(sumset: np.ndarray, p: int = 2, exhaustive: bool = False) -> int:
-    """
-    Finds the dimension of the largest linear subspace completely contained within S+S.
-    By default uses a greedy iterative check of linearly independent generators. If
-    `exhaustive=True` it will search all combinations of generators (starting from
-    the largest possible dimension) to find the maximum dimension whose span is
-    fully contained in `sumset`.
-    """
+def _find_maximum_subspace_dimension_greedy(sumset: np.ndarray, p: int = 2) -> int:
+    """Greedily build a maximal set of independent generators whose span is contained in sumset."""
     n = sumset.shape[1]
     sumset_set = {tuple(row) for row in sumset}
-
-    if tuple(np.zeros(n, dtype=np.int8)) not in sumset_set:
-        return -1
-
-    max_possible_d = 0
-    size = len(sumset)
-    if size > 0:
-        while p ** (max_possible_d + 1) <= size and max_possible_d < n:
-            max_possible_d += 1
-
-    if exhaustive:
-        for d in range(max_possible_d, 0, -1):
-            nonzero_rows = [row for row in sumset if not np.all(row == 0)]
-            for combo in combinations(nonzero_rows, d):
-                mat = np.vstack(combo)
-                if rank_mod_p(mat, p) != d:
-                    continue
-
-                all_in_sumset = True
-                for coeffs in product(range(p), repeat=d):
-                    if all(c == 0 for c in coeffs):
-                        vec = tuple(np.zeros(n, dtype=np.int8))
-                    else:
-                        vec_arr = sum((coeffs[i] * mat[i]) for i in range(d)) % p
-                        vec = tuple(vec_arr.astype(np.int8))
-                    if vec not in sumset_set:
-                        all_in_sumset = False
-                        break
-
-                if all_in_sumset:
-                    return d
-
-        return 0
-
     independent_generators = []
 
     for candidate in sumset:
         if np.all(candidate == 0):
             continue
-        tuple_cand = tuple(candidate)
 
         valid_generator = True
         current_span = [np.zeros(n, dtype=np.int8)]
@@ -125,3 +84,63 @@ def find_maximum_subspace_dimension(sumset: np.ndarray, p: int = 2, exhaustive: 
                 independent_generators.append(candidate)
 
     return len(independent_generators)
+
+
+def find_maximum_subspace_dimension(
+    sumset: np.ndarray,
+    p: int = 2,
+    exhaustive: bool = False,
+    max_combinations: Optional[int] = 10_000,
+) -> int:
+    """
+    Finds the dimension of the largest linear subspace completely contained within S+S.
+    By default uses a greedy iterative check of linearly independent generators. If
+    `exhaustive=True` it will search combinations of generators (starting from the
+    largest possible dimension) to find the maximum dimension whose span is fully
+    contained in `sumset`. A `max_combinations` limit can be supplied to avoid
+    combinatorial blowups in large experiments; if reached, the greedy result is returned.
+    """
+    n = sumset.shape[1]
+    sumset_set = {tuple(row) for row in sumset}
+
+    if tuple(np.zeros(n, dtype=np.int8)) not in sumset_set:
+        return -1
+
+    max_possible_d = 0
+    size = len(sumset)
+    if size > 0:
+        while p ** (max_possible_d + 1) <= size and max_possible_d < n:
+            max_possible_d += 1
+
+    greedy_dimension = _find_maximum_subspace_dimension_greedy(sumset, p)
+
+    if exhaustive:
+        checked_combinations = 0
+        for d in range(max_possible_d, 0, -1):
+            nonzero_rows = [row for row in sumset if not np.all(row == 0)]
+            for combo in combinations(nonzero_rows, d):
+                if max_combinations is not None and checked_combinations >= max_combinations:
+                    return greedy_dimension
+
+                checked_combinations += 1
+                mat = np.vstack(combo)
+                if rank_mod_p(mat, p) != d:
+                    continue
+
+                all_in_sumset = True
+                for coeffs in product(range(p), repeat=d):
+                    if all(c == 0 for c in coeffs):
+                        vec = tuple(np.zeros(n, dtype=np.int8))
+                    else:
+                        vec_arr = sum((coeffs[i] * mat[i]) for i in range(d)) % p
+                        vec = tuple(vec_arr.astype(np.int8))
+                    if vec not in sumset_set:
+                        all_in_sumset = False
+                        break
+
+                if all_in_sumset:
+                    return d
+
+        return 0
+
+    return greedy_dimension

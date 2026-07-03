@@ -111,6 +111,12 @@ def test_find_maximum_subspace_dimension_uses_field_rank_over_f2():
     assert find_maximum_subspace_dimension(sumset, p=2, exhaustive=True) == 2
 
 
+def test_find_maximum_subspace_dimension_exhaustive_respects_combinatorial_limit():
+    sumset = generate_space(6, p=2)
+    greedy = find_maximum_subspace_dimension(sumset, p=2)
+    assert find_maximum_subspace_dimension(sumset, p=2, exhaustive=True, max_combinations=10) == greedy
+
+
 def test_generate_standard_ball_regression_matches_expected_vectors():
     ball = generate_standard_ball(3, 1)
     expected = np.array(

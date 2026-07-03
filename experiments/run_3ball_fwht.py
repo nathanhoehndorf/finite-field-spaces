@@ -117,7 +117,7 @@ def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100, exhaustive=F
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='3-ball FWHT sweep')
-    parser.add_argument('--n', type=int, default=20, help='dimension n')
+    parser.add_argument('--n', type=int, default=16, help='dimension n')
     parser.add_argument('--r', type=int, nargs='+', default=[4,5,6], help='r values to sweep')
     parser.add_argument('--trials', type=int, default=100, help='trials per r')
     parser.add_argument('--exhaustive', action='store_true', help='Use exhaustive search for max subspace dimension')
