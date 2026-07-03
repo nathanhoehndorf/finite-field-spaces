@@ -19,6 +19,9 @@ optional-dependencies = { test = ["pytest>=7.0"] }
 [project.urls]
 "Homepage" = "https://github.com/nathanhoehndorf/finite-field-spaces"
 
+[tool.setuptools]
+license-files = []
+
 [tool.setuptools.package-dir]
 "" = "src"
 
