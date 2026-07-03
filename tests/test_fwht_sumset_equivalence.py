@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from ffspaces.core import is_invertible
+from ffspaces.core import generate_random_basis, is_invertible
 from ffspaces.fwht_operators import compute_sumset_fwht
 from ffspaces.operators import _compute_sumset_original, compare_sumset_methods
 
@@ -13,6 +13,15 @@ class SumsetFwhtComparisonTest(unittest.TestCase):
         self.assertEqual(subset.shape[1], 6)
         self.assertEqual(subset.shape[0], 10)
         self.assertEqual({tuple(row) for row in fwht_sumset}, {tuple(row) for row in original_sumset})
+
+    def test_generate_random_basis_accepts_rng(self):
+        rng = np.random.default_rng(17)
+        basis = generate_random_basis(4, p=2, rng=rng)
+        basis_again = generate_random_basis(4, p=2, rng=np.random.default_rng(17))
+
+        self.assertEqual(basis.shape, (4, 4))
+        self.assertTrue(is_invertible(basis, p=2))
+        self.assertTrue(np.array_equal(basis, basis_again))
 
     def test_general_fourier_sumset_matches_original_for_p3(self):
         subset = np.array([

@@ -48,9 +48,12 @@ def is_invertible(matrix: np.ndarray, p: int = 2) -> bool:
 
     return False
 
-def generate_random_basis(n: int, p: int = 2) -> np.ndarray:
+def generate_random_basis(n: int, p: int = 2, rng=None) -> np.ndarray:
     """Generates a random invertible n x n matrix over F_p to represent a basis change."""
+    if rng is None:
+        rng = np.random.default_rng()
+
     while True:
-        matrix = np.random.randint(0, p, size=(n,n)).astype(np.int8)
+        matrix = rng.integers(0, p, size=(n, n)).astype(np.int8)
         if is_invertible(matrix, p):
             return matrix

@@ -48,19 +48,19 @@ def worker_trial(args):
         exhaustive = False
     else:
         n, r, seed, exhaustive = args
-    np.random.seed(seed)
+    rng = np.random.default_rng(seed)
 
     universe_size = 1 << n
 
     W_r = generate_standard_ball(n, r)
-    L1 = generate_random_basis(n, 2)
-    L2 = generate_random_basis(n, 2)
+    L1 = generate_random_basis(n, 2, rng=rng)
+    L2 = generate_random_basis(n, 2, rng=rng)
     L1_inv_T = invert_matrix_f2(L1).T
     L2_inv_T = invert_matrix_f2(L2).T
 
-    c1 = np.random.randint(0, 2, n, dtype=np.int8)
-    c2 = np.random.randint(0, 2, n, dtype=np.int8)
-    c3 = np.random.randint(0, 2, n, dtype=np.int8)
+    c1 = rng.integers(0, 2, n, dtype=np.int8)
+    c2 = rng.integers(0, 2, n, dtype=np.int8)
+    c3 = rng.integers(0, 2, n, dtype=np.int8)
 
     # Use consolidated covering generator (fast binary path)
     centers = [c1, c2, c3]
@@ -93,7 +93,7 @@ def worker_trial(args):
 
     return {'S_size': S_size, 'max_subspace_dim': max_dim}
 
-def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100, exhaustive=False):
+def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100, exhaustive=False, seed=0):
     print(f"Starting 3-Ball Independent Basis Sweep for n={n}")
     print(f"Universe Size; {1 << n}")
 
@@ -105,7 +105,8 @@ def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100, exhaustive=F
             print(f"\n--- Running r={r} (Codimension bound tests) ---")
             start = time.time()
 
-            seeds = np.random.randint(0, 1000000, trials_per_r)
+            rng = np.random.default_rng(seed)
+            seeds = rng.integers(0, 1000000, trials_per_r)
             tasks = [(n, r, seed, exhaustive) for seed in seeds]
 
             trial_results = pool.map(worker_trial, tasks)
@@ -131,7 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('--r', type=int, nargs='+', default=[4,5,6], help='r values to sweep')
     parser.add_argument('--trials', type=int, default=100, help='trials per r')
     parser.add_argument('--exhaustive', action='store_true', help='Use exhaustive search for max subspace dimension')
+    parser.add_argument('--seed', type=int, default=0, help='Seed for the experiment RNG')
 
     args = parser.parse_args()
 
-    run_multithreaded_sweep(n=args.n, r_vals=args.r, trials_per_r=args.trials, exhaustive=args.exhaustive)
+    run_multithreaded_sweep(n=args.n, r_vals=args.r, trials_per_r=args.trials, exhaustive=args.exhaustive, seed=args.seed)
