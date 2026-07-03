@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+type: software
+title: "ffspaces: A Computational Laboratory for Finite Field Vector Spaces, Hamming Balls, and Sumset Structure"
+version: 0.2.0
+date-released: 2024-07-03
+authors:
+  - family-names: "Hoehndorf"
+    given-names: "Nathan"
+    affiliation: "Colorado School of Mines"
+repository-code: "https://github.com/nathanhoehndorf/finite-field-spaces"
+url: "https://github.com/nathanhoehndorf/finite-field-spaces"
+license: MIT
+keywords:
+  - additive combinatorics
+  - finite fields
+  - Hamming balls
+  - sumsets
+  - coding theory
