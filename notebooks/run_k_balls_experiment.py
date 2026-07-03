@@ -6,10 +6,10 @@ import os
 from pathlib import Path
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.core import generate_space, generate_random_basis
-from src.geometries import generate_hamming_ball
-from src.covers import generate_covering, complement
-from src.operators import compute_sumset, find_maximum_subspace_dimension
+from ffspaces.core import generate_space, generate_random_basis
+from ffspaces.geometries import generate_hamming_ball
+from ffspaces.covers import generate_covering, complement
+from ffspaces.operators import compute_sumset, find_maximum_subspace_dimension
 
 np.random.seed(0)
 

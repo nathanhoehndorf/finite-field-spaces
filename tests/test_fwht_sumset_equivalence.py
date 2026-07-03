@@ -1,9 +1,9 @@
 import unittest
 import numpy as np
 
-from src.core import is_invertible
-from src.fwht_operators import compute_sumset_fwht
-from src.operators import _compute_sumset_original, compare_sumset_methods
+from ffspaces.core import is_invertible
+from ffspaces.fwht_operators import compute_sumset_fwht
+from ffspaces.operators import _compute_sumset_original, compare_sumset_methods
 
 
 class SumsetFwhtComparisonTest(unittest.TestCase):

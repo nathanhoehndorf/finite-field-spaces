@@ -4,10 +4,10 @@ import itertools
 import argparse
 from multiprocessing import Pool, cpu_count
 
-from core import generate_random_basis
-from fwht_operators import compute_sumset_fwht, vectors_to_ints
-from src.operators import find_maximum_subspace_dimension
-from src.covers import generate_covering, complement
+from ffspaces.core import generate_random_basis
+from ffspaces.fwht_operators import compute_sumset_fwht, vectors_to_ints, ints_to_vectors
+from ffspaces.operators import find_maximum_subspace_dimension
+from ffspaces.covers import generate_covering, complement
 
 def generate_standard_ball(n: int, r: int) -> np.ndarray:
     """
@@ -78,7 +78,6 @@ def worker_trial(args):
         S_ints = all_ints[mask]
 
         # We're cheating a little bit here
-        from fwht_operators import ints_to_vectors
         S_vectors = ints_to_vectors(S_ints, n)
 
         S_plus_S_vectors = compute_sumset_fwht(S_vectors)
