@@ -16,3 +16,6 @@ git clone https://github.com/nathanhoehndorf/finite-field-spaces
 cd finite-field-spaces
 pip install -e
 ```
+
+## Experiments
+One-off analysis and experiment scripts now live in the experiments directory so they stay separate from the installable package code in src/.

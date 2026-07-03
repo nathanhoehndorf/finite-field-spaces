@@ -1,17 +1,25 @@
 #!/usr/bin/env python3
 """Print summaries for experiment .npz files.
-Usage: python notebooks/print_experiment_summary.py [file.npz]
-If no file is given, defaults to `k_balls_experiment_results.npz` in the notebooks folder.
+Usage: python experiments/print_experiment_summary.py [file.npz]
+If no file is given, defaults to `k_balls_experiment_results.npz` in the experiments folder.
 """
 import argparse
 from pathlib import Path
 import numpy as np
 
 parser = argparse.ArgumentParser(description='Print summary for .npz experiment files')
-parser.add_argument('npz', nargs='?', default='k_balls_experiment_results.npz', help='Relative path to .npz file in notebooks/')
+parser.add_argument('npz', nargs='?', default='k_balls_experiment_results.npz', help='Relative path to .npz file in experiments/')
 args = parser.parse_args()
 
-fpath = Path(__file__).parent / args.npz
+fpath = Path(args.npz)
+if not fpath.is_absolute():
+    candidates = [
+        Path.cwd() / fpath,
+        Path(__file__).parent / fpath,
+        Path(__file__).parent / fpath.name,
+    ]
+    fpath = next((candidate for candidate in candidates if candidate.exists()), candidates[0])
+
 if not fpath.exists():
     print('File not found:', fpath)
     raise SystemExit(1)
