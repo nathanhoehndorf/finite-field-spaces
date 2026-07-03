@@ -7,7 +7,7 @@ from ffspaces.operators import (
     compute_sumset,
     find_maximum_subspace_dimension,
 )
-from run_3ball_fwht import generate_standard_ball
+from ffspaces.geometries import generate_standard_ball
 
 
 @pytest.mark.parametrize(

@@ -1,25 +1,14 @@
-import time
-import numpy as np
-import itertools
 import argparse
+import time
 from multiprocessing import Pool, cpu_count
 
-from ffspaces.core import generate_random_basis
-from ffspaces.fwht_operators import compute_sumset_fwht, vectors_to_ints, ints_to_vectors
-from ffspaces.operators import find_maximum_subspace_dimension
-from ffspaces.covers import generate_covering, complement
+import numpy as np
 
-def generate_standard_ball(n: int, r: int) -> np.ndarray:
-    """
-    Generates all vectors in F_2^n with Hamming weight <= r
-    """
-    vectors = []
-    for weight in range(r+1):
-        for combo in itertools.combinations(range(n), weight):
-            vec = np.zeros(n, dtype=np.int8)
-            vec[list(combo)] = 1
-            vectors.append(vec)
-    return np.array(vectors, dtype=np.int8)
+from ffspaces.core import generate_random_basis
+from ffspaces.covers import generate_covering
+from ffspaces.fwht_operators import compute_sumset_fwht, ints_to_vectors, vectors_to_ints
+from ffspaces.geometries import generate_standard_ball
+from ffspaces.operators import find_maximum_subspace_dimension
     
 def invert_matrix_f2(M: np.ndarray) -> np.ndarray:
     """

@@ -1,4 +1,19 @@
+import itertools
+
 import numpy as np
+
+
+def generate_standard_ball(n: int, r: int) -> np.ndarray:
+    """
+    Generates all vectors in F_2^n with Hamming weight <= r.
+    """
+    vectors = []
+    for weight in range(r + 1):
+        for combo in itertools.combinations(range(n), weight):
+            vec = np.zeros(n, dtype=np.int8)
+            vec[list(combo)] = 1
+            vectors.append(vec)
+    return np.array(vectors, dtype=np.int8)
 
 
 def compute_hamming_weight(vectors: np.ndarray) -> np.ndarray:

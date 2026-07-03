@@ -12,7 +12,7 @@ from .operators import (
     find_maximum_subspace_dimension,
 )
 from .covers import generate_covering, complement
-from .geometries import compute_hamming_weight, generate_hamming_ball
+from .geometries import compute_hamming_weight, generate_hamming_ball, generate_standard_ball
 
 __all__ = [
     "generate_space",
