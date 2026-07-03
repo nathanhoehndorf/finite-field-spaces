@@ -7,6 +7,7 @@ from multiprocessing import Pool, cpu_count
 from core import generate_random_basis
 from fwht_operators import compute_sumset_fwht, vectors_to_ints
 from src.operators import find_maximum_subspace_dimension
+from src.covers import generate_covering, complement
 
 def generate_standard_ball(n: int, r: int) -> np.ndarray:
     """
@@ -61,17 +62,11 @@ def worker_trial(args):
     c2 = np.random.randint(0, 2, n, dtype=np.int8)
     c3 = np.random.randint(0, 2, n, dtype=np.int8)
 
-    A1 = (W_r ^ c1)
-    A2 = (W_r @ L1_inv_T) % 2
-    A2 = (A2 ^ c2)
-    A3 = (W_r @ L2_inv_T) % 2
-    A3 = (A3 ^ c3)
-
-    ints1 = vectors_to_ints(A1)
-    ints2 = vectors_to_ints(A2)
-    ints3 = vectors_to_ints(A3)
-    
-    covered_ints = np.unique(np.concatenate([ints1, ints2, ints3]))
+    # Use consolidated covering generator (fast binary path)
+    centers = [c1, c2, c3]
+    bases = [None, L1_inv_T, L2_inv_T]
+    covered = generate_covering(centers, r, bases=bases, p=2, universe=None)
+    covered_ints = vectors_to_ints(covered)
 
     S_size = universe_size - len(covered_ints)
 

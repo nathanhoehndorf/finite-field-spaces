@@ -1,7 +1,9 @@
 import unittest
 import numpy as np
 
-from src.operators import compare_sumset_methods
+from src.core import is_invertible
+from src.fwht_operators import compute_sumset_fwht
+from src.operators import _compute_sumset_original, compare_sumset_methods
 
 
 class SumsetFwhtComparisonTest(unittest.TestCase):
@@ -11,6 +13,28 @@ class SumsetFwhtComparisonTest(unittest.TestCase):
         self.assertEqual(subset.shape[1], 6)
         self.assertEqual(subset.shape[0], 10)
         self.assertEqual({tuple(row) for row in fwht_sumset}, {tuple(row) for row in original_sumset})
+
+    def test_general_fourier_sumset_matches_original_for_p3(self):
+        subset = np.array([
+            [0, 0],
+            [1, 0],
+            [0, 1],
+            [1, 1],
+            [2, 0],
+            [0, 2],
+        ], dtype=np.int8)
+
+        fwht_sumset = compute_sumset_fwht(subset, p=3)
+        original_sumset = _compute_sumset_original(subset, p=3)
+
+        self.assertEqual({tuple(row) for row in fwht_sumset}, {tuple(row) for row in original_sumset})
+
+    def test_is_invertible_uses_rank_over_f2(self):
+        invertible = np.array([[1, 1], [1, 0]], dtype=np.int8)
+        singular = np.array([[1, 1], [1, 1]], dtype=np.int8)
+
+        self.assertTrue(is_invertible(invertible, p=2))
+        self.assertFalse(is_invertible(singular, p=2))
 
 
 if __name__ == "__main__":

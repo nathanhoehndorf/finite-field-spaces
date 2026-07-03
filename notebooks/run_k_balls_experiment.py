@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.core import generate_space, generate_random_basis
 from src.geometries import generate_hamming_ball
+from src.covers import generate_covering, complement
 from src.operators import compute_sumset, find_maximum_subspace_dimension
 
 np.random.seed(0)
@@ -26,13 +27,13 @@ def run_experiments(ns=(5,6), Ks=(4,5,6,7,8,9), trials=10000, radius=1, p=2, sho
             for t in range(trials):
                 bases = [generate_random_basis(n, p) for _ in range(K)]
                 centers = [universe[np.random.choice(len(universe))] for _ in range(K)]
-                balls = [generate_hamming_ball(universe, centers[i], radius, bases[i], p) for i in range(K)]
                 try:
-                    all_covered = np.unique(np.vstack(balls), axis=0)
-                except ValueError:
+                    covered = generate_covering(centers, radius, bases=bases, p=p, universe=universe)
+                except Exception:
+                    # fallback to previous behaviour if generation fails for a trial
                     continue
-                covered_tuples = {tuple(row) for row in all_covered}
-                S = np.array([row for row in universe if tuple(row) not in covered_tuples])
+
+                S = complement(universe, covered)
                 S_size = len(S)
                 if S_size == 0:
                     max_dim = None

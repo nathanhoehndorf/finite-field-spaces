@@ -22,13 +22,13 @@ def _compute_sumset_original(set_elements: np.ndarray, p: int = 2) -> np.ndarray
 
 def compute_sumset(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
     """
-    Computes the unique elements of the sumset S + S over F_p.
-    For binary fields (p=2), this uses the FWHT implementation.
+    Computes the unique elements of the sumset S + S over Z_p^n.
+    This uses the generalized Fourier-transform fast path for all p >= 2.
     """
-    if p != 2:
-        return _compute_sumset_original(set_elements, p)
+    if p <= 1:
+        raise ValueError("p must be at least 2")
 
-    return compute_sumset_fwht(set_elements)
+    return compute_sumset_fwht(set_elements, p=p)
 
 def compare_sumset_methods(n: int = 6, subset_size: int = 10, seed: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
