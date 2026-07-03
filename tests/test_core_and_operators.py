@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from ffspaces.core import generate_space, generate_random_basis, is_invertible
+from ffspaces.core import generate_space, generate_random_basis, is_invertible, rank_mod_p
 from ffspaces.operators import (
     _compute_sumset_original,
     compute_sumset,
@@ -130,3 +130,7 @@ def test_generate_standard_ball_radius_zero_is_singleton_zero_vector():
     ball = generate_standard_ball(4, 0)
     assert ball.shape == (1, 4)
     assert np.array_equal(ball, np.zeros((1, 4), dtype=np.int8))
+
+def test_rank_mod_p_catches_dependency_that_looks_indepenent_over_reals():
+    a, b, c = [1,1,0,0], [1,0,1,0], [0,1,1,0]
+    assert rank_mod_p(np.array([a,b,c]), p=2) == 2
