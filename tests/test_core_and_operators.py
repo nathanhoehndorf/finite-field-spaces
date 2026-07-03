@@ -97,6 +97,20 @@ def test_find_maximum_subspace_dimension_exhaustive_matches_greedy():
     assert find_maximum_subspace_dimension(sumset, p=2, exhaustive=True) == 3
 
 
+def test_find_maximum_subspace_dimension_uses_field_rank_over_f2():
+    sumset = np.array(
+        [
+            [0, 0, 0, 0],
+            [1, 1, 0, 0],
+            [1, 0, 1, 0],
+            [0, 1, 1, 0],
+        ],
+        dtype=np.int8,
+    )
+    assert find_maximum_subspace_dimension(sumset, p=2) == 2
+    assert find_maximum_subspace_dimension(sumset, p=2, exhaustive=True) == 2
+
+
 def test_generate_standard_ball_regression_matches_expected_vectors():
     ball = generate_standard_ball(3, 1)
     expected = np.array(

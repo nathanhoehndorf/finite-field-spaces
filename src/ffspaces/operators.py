@@ -6,6 +6,44 @@ import numpy as np
 from .fwht_operators import compute_sumset_fwht
 
 
+def _matrix_rank_over_finite_field(matrix: np.ndarray, p: int) -> int:
+    """Computes the rank of a matrix over the finite field F_p."""
+    if matrix.size == 0:
+        return 0
+
+    reduced = np.array(matrix, dtype=np.int64, copy=True)
+    rows, cols = reduced.shape
+    rank = 0
+
+    for col in range(cols):
+        pivot_row = None
+        for row in range(rank, rows):
+            if reduced[row, col] % p != 0:
+                pivot_row = row
+                break
+
+        if pivot_row is None:
+            continue
+
+        if pivot_row != rank:
+            reduced[[rank, pivot_row]] = reduced[[pivot_row, rank]]
+
+        pivot = reduced[rank, col] % p
+        inverse = pow(int(pivot), -1, p)
+        reduced[rank, :] = (reduced[rank, :] * inverse) % p
+
+        for row in range(rows):
+            if row != rank and reduced[row, col] % p != 0:
+                factor = reduced[row, col] % p
+                reduced[row, :] = (reduced[row, :] - factor * reduced[rank, :]) % p
+
+        rank += 1
+        if rank == rows:
+            break
+
+    return rank
+
+
 def _compute_sumset_original(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
     """
     Computes the unique elements of the sumset S + S over F_p
@@ -77,7 +115,7 @@ def find_maximum_subspace_dimension(sumset: np.ndarray, p: int = 2, exhaustive: 
             nonzero_rows = [row for row in sumset if not np.all(row == 0)]
             for combo in combinations(nonzero_rows, d):
                 mat = np.vstack(combo)
-                if np.linalg.matrix_rank(mat.astype(float)) != d:
+                if _matrix_rank_over_finite_field(mat, p) != d:
                     continue
 
                 all_in_sumset = True
@@ -120,7 +158,7 @@ def find_maximum_subspace_dimension(sumset: np.ndarray, p: int = 2, exhaustive: 
 
         if valid_generator:
             test_matrix = np.array(independent_generators + [candidate])
-            if np.linalg.matrix_rank(test_matrix.astype(float)) == len(independent_generators) + 1:
+            if _matrix_rank_over_finite_field(test_matrix, p) == len(independent_generators) + 1:
                 independent_generators.append(candidate)
 
     return len(independent_generators)
