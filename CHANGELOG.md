@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.2.1] - 2026-07-03
+
+### Fixed
+- Bumped version to 0.2.1 to resolve PyPI publish failure caused by re-uploading already-existing 0.2.0 distribution files.
+
 ## [0.2.0] - 2026-07-03
 
 ### Added
