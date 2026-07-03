@@ -1,10 +1,5 @@
 from .core import generate_space, generate_random_basis, is_invertible
-from .fwht_operators import (
-    vectors_to_ints,
-    ints_to_vectors,
-    fwht,
-    compute_sumset_fwht,
-)
+from .fwht_operators import vectors_to_ints, ints_to_vectors, compute_sumset_fwht
 from .operators import (
     _compute_sumset_original,
     compute_sumset,
@@ -20,7 +15,6 @@ __all__ = [
     "is_invertible",
     "vectors_to_ints",
     "ints_to_vectors",
-    "fwht",
     "compute_sumset_fwht",
     "_compute_sumset_original",
     "compute_sumset",
