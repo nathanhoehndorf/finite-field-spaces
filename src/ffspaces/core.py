@@ -53,6 +53,9 @@ def rank_mod_p(matrix, p: int = 2) -> int:
 
 def is_invertible(matrix: np.ndarray, p: int = 2) -> bool:
     """Checks if an n x n matrix is invertible over the finite field F_p."""
+    matrix = np.asarray(matrix)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        return False
     return rank_mod_p(matrix, p) == matrix.shape[0]
 
 
