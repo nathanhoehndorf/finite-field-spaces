@@ -1,10 +1,12 @@
 import time
 import numpy as np
 import itertools
+import argparse
 from multiprocessing import Pool, cpu_count
 
 from core import generate_random_basis
 from fwht_operators import compute_sumset_fwht, vectors_to_ints
+from src.operators import find_maximum_subspace_dimension
 
 def generate_standard_ball(n: int, r: int) -> np.ndarray:
     """
@@ -16,7 +18,7 @@ def generate_standard_ball(n: int, r: int) -> np.ndarray:
             vec = np.zeros(n, dtype=np.int8)
             vec[list(combo)] = 1
             vectors.append(vec)
-        return np.array(vectors, dtype=np.int8)
+    return np.array(vectors, dtype=np.int8)
     
 def invert_matrix_f2(M: np.ndarray) -> np.ndarray:
     """
@@ -38,9 +40,13 @@ def invert_matrix_f2(M: np.ndarray) -> np.ndarray:
 def worker_trial(args):
     """
     Single trial execution for multiprocessing
-    args: (n, r, seed)
+    args: (n, r, seed, exhaustive)
     """
-    n, r, seed = args
+    if len(args) == 3:
+        n, r, seed = args
+        exhaustive = False
+    else:
+        n, r, seed, exhaustive = args
     np.random.seed(seed)
 
     universe_size = 1 << n
@@ -82,14 +88,18 @@ def worker_trial(args):
 
         S_plus_S_vectors = compute_sumset_fwht(S_vectors)
 
-        if len(S_plus_S_vectors) == universe_size:
-            max_dim = n
+        if exhaustive:
+            # use exact search for max subspace dimension
+            max_dim = find_maximum_subspace_dimension(S_plus_S_vectors, p=2, exhaustive=True)
         else:
-            max_dim = int(np.log2(len(S_plus_S_vectors)))
+            if len(S_plus_S_vectors) == universe_size:
+                max_dim = n
+            else:
+                max_dim = int(np.log2(len(S_plus_S_vectors)))
 
     return {'S_size': S_size, 'max_subspace_dim': max_dim}
 
-def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100):
+def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100, exhaustive=False):
     print(f"Starting 3-Ball Independent Basis Sweep for n={n}")
     print(f"Universe Size; {1 << n}")
 
@@ -102,7 +112,7 @@ def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100):
             start = time.time()
 
             seeds = np.random.randint(0, 1000000, trials_per_r)
-            tasks = [(n, r, seed) for seed in seeds]
+            tasks = [(n, r, seed, exhaustive) for seed in seeds]
 
             trial_results = pool.map(worker_trial, tasks)
 
@@ -122,4 +132,12 @@ def run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=100):
     return results
 
 if __name__ == '__main__':
-    run_multithreaded_sweep(n=16, r_vals=[4,5,6], trials_per_r=1000)
+    parser = argparse.ArgumentParser(description='3-ball FWHT sweep')
+    parser.add_argument('--n', type=int, default=20, help='dimension n')
+    parser.add_argument('--r', type=int, nargs='+', default=[4,5,6], help='r values to sweep')
+    parser.add_argument('--trials', type=int, default=100, help='trials per r')
+    parser.add_argument('--exhaustive', action='store_true', help='Use exhaustive search for max subspace dimension')
+
+    args = parser.parse_args()
+
+    run_multithreaded_sweep(n=args.n, r_vals=args.r, trials_per_r=args.trials, exhaustive=args.exhaustive)
