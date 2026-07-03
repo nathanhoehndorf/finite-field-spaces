@@ -22,7 +22,13 @@ The package is designed for small-to-medium computational experiments in additiv
 
 ## Installation
 
-Clone the repository and install it in editable mode:
+Install from PyPI:
+
+```bash
+pip install ffspaces
+```
+
+Or clone the repository and install in editable mode:
 
 ```bash
 git clone https://github.com/nathanhoehndorf/finite-field-spaces
