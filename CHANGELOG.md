@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] - 2026-07-03
+## [0.2.2] - 2026-07-03
 
 ### Added
 - Added `setup.py` to enable editable installs via `pip install -e .[test]`.
@@ -18,7 +18,7 @@
   `src/ffspaces` package to remove an import-shadowing hazard.
 
 ### Changed
-- Bumped project version from `0.1.0` to `0.2.0` in `pyproject.toml` and `setup.py`.
+- Bumped project version from `0.1.0` to `0.2.2` in `pyproject.toml` and `setup.py`.
 - `is_invertible` now delegates to the shared `rank_mod_p` for consistency
   with the subspace-dimension code.
 - README updated with the underlying math (Hamming balls, sumsets, subspace

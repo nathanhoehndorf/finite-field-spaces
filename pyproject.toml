@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ffspaces"
-version = "0.2.0"
+version = "0.2.2"
 authors = [{name="Nathan Hoehndorf"}]
 description = "A computational laboratory for finite field vector spaces, Hamming balls, and sumset structural analysis."
 readme = "README.md"

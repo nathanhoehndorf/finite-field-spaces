@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 type: software
 title: "ffspaces: A Computational Laboratory for Finite Field Vector Spaces, Hamming Balls, and Sumset Structure"
-version: 0.2.1
+version: 0.2.2
 date-released: 2026-07-03
 authors:
   - family-names: "Hoehndorf"
