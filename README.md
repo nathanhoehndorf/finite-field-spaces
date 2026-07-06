@@ -141,6 +141,16 @@ dimension = find_maximum_subspace_dimension(sumset, p=2)
 print(dimension)
 ```
 
+## ⚠️ Performance & Scale Warning (Memory Constraints)
+
+Because `ffspaces` materializes entire vector spaces and handles dense arrays for operations like the Fast Walsh-Hadamard Transform (FWHT), memory consumption scales **exponentially** with the dimension $n$ and prime characteristic $p$ ($p^n$ rows). 
+
+- **Safe Range ($n \le 16$ for $p=2$):** Optimized for fast, small-to-medium computational experiments in additive combinatorics or discrete geometry. Operations will be near-instantaneous.
+- **Caution Range ($16 < n \le 22$ for $p=2$):** Memory footprints grow significantly. Functions like `generate_space` or `compute_sumset` will consume gigabytes of RAM.
+- **High Dimensions ($n > 22$ for $p=2$):** Attempting to generate the full space or compute dense transforms will likely result in a system Out-Of-Memory (OOM) crash. 
+
+Always consider the size of $p^n$ relative to your available hardware before running unconstrained space generations.
+
 ## Experiments
 
 One-off analysis and experiment scripts live in the `experiments/` directory so they stay separate from the installable package code in `src/`.
