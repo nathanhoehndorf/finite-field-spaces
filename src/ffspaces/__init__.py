@@ -8,6 +8,16 @@ from .operators import (
 )
 from .covers import generate_covering, complement
 from .geometries import compute_hamming_weight, generate_hamming_ball, generate_standard_ball
+from .lowmem import (
+    generate_space_chunked,
+    compute_sumset_lowmem,
+    compute_sumset_lowmem_from_ints,
+    generate_ball_ints_lowmem,
+    generate_covering_ints_lowmem,
+    complement_ints_lowmem,
+    find_maximum_subspace_dimension_lowmem,
+    estimate_memory_gb,
+)
 
 __all__ = [
     "generate_space",
@@ -24,4 +34,14 @@ __all__ = [
     "complement",
     "compute_hamming_weight",
     "generate_hamming_ball",
+    "generate_standard_ball",
+    # low-memory API
+    "generate_space_chunked",
+    "compute_sumset_lowmem",
+    "compute_sumset_lowmem_from_ints",
+    "generate_ball_ints_lowmem",
+    "generate_covering_ints_lowmem",
+    "complement_ints_lowmem",
+    "find_maximum_subspace_dimension_lowmem",
+    "estimate_memory_gb",
 ]

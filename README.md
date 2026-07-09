@@ -6,18 +6,22 @@ The package is designed for small-to-medium computational experiments in additiv
 
 ## Current functionality
 
-- **Finite-field vector spaces:** generate the full vector space $\mathbb{F}_p^n$ or construct random invertible basis changes.
+- **Finite-field vector spaces:** generate the full vector space $\mathbb{F}_p^n$ or stream it in memory-bounded chunks.
 - **Finite-field rank:** compute matrix rank over $\mathbb{F}_p$ using modular Gaussian elimination.
 - **Sumsets:** compute $S+S$ for a set of vectors over $\mathbb{F}_p^n$, including a direct reference method and a faster FWHT-based implementation.
 - **Subspace detection:** find the largest linear subspace contained in a sumset, with both greedy and exhaustive search modes.
-- **Hamming-ball geometry:** generate standard Hamming balls, compute Hamming weights, and build balls under arbitrary linear transforms.
+- **Hamming-ball geometry:** generate standard Hamming balls, compute Hamming weights, and build balls under arbitrary linear transforms — with or without a pre-built universe array.
 - **Cover constructions:** build unions of Hamming balls and compute complements relative to a universe.
+- **Low-memory mode:** run all of the above for $n > 20$ without out-of-memory crashes, via a dedicated low-memory API and a `--low-memory` CLI flag.
+- **Command-line interface:** run the $k$-balls covering experiment and inspect memory estimates directly from the shell.
 
 ## Features
 
 - **NumPy-based operations:** vectorized generation and manipulation of finite-field vectors.
 - **Field-aware linear algebra:** rank and invertibility checks performed over $\mathbb{F}_p$, not over the reals.
 - **Flexible geometry tools:** support for binary and higher-characteristic experiments.
+- **Low-memory implementations:** real float64 FWHT (vs complex128 FFT), in-place transforms, combinatorial ball generation, and boolean-mask complement — all reducing peak RAM by 5–50× for large $n$.
+- **CLI entry point:** `ffspaces run` and `ffspaces memory-check` for shell-based experiments.
 - **Reusable experiment helpers:** scripts and utilities in the `experiments/` directory for one-off analysis.
 
 ## Installation
@@ -117,6 +121,146 @@ print("covered size:", covered.shape[0])
 print("missing size:", missing.shape[0])
 ```
 
+### Low-memory API
+
+For $n > 20$ use the functions in `ffspaces.lowmem` (also exported from the package root). These avoid materialising the full $p^n \times n$ universe array and replace the complex128 FFT with a real float64 in-place FWHT.
+
+```python
+from ffspaces import (
+    generate_space_chunked,       
+    generate_ball_ints_lowmem,      
+    generate_covering_ints_lowmem,   
+    complement_ints_lowmem,          
+    compute_sumset_lowmem,           
+    compute_sumset_lowmem_from_ints,
+    find_maximum_subspace_dimension_lowmem,
+    estimate_memory_gb
+)
+```
+
+**Check memory requirements before running:**
+
+```python
+from ffspaces import estimate_memory_gb
+
+for n in [24, 28, 30]:
+    est = estimate_memory_gb(n)
+    print(f"n={n}: sumset FWHT {est['compute_sumset_lowmem_GB']:.1f} GB  "
+          f"(standard FFT {est['compute_sumset_standard_GB']:.0f} GB)")
+# n=24: sumset FWHT 0.2 GB  (standard FFT 1 GB)
+# n=28: sumset FWHT 3.2 GB  (standard FFT 17 GB)
+# n=30: sumset FWHT 12.9 GB  (standard FFT 69 GB)
+```
+
+**End-to-end low-memory workflow for large n:**
+
+```python
+import numpy as np
+from ffspaces import (
+    generate_random_basis,
+    generate_covering_ints_lowmem,
+    complement_ints_lowmem,
+    compute_sumset_lowmem_from_ints,
+    find_maximum_subspace_dimension_lowmem,
+)
+
+n, k, radius = 25, 3, 1
+rng = np.random.default_rng(0)
+
+# Random centers as integer codes — no 2^25 × 25 universe array
+center_ints = rng.integers(0, 1 << n, size=k)
+from ffspaces import ints_to_vectors
+centers = [ints_to_vectors(np.array([ci]), n)[0] for ci in center_ints]
+bases   = [generate_random_basis(n, rng=rng) for _ in range(k)]
+
+# Covered set and complement via bool mask (32 MB for n=25)
+covered = generate_covering_ints_lowmem(n, centers, radius, bases=bases)
+S_ints  = complement_ints_lowmem(n, covered)
+
+# S+S via real float64 FWHT (256 MB for n=25)
+ss_ints = compute_sumset_lowmem_from_ints(S_ints, n)
+
+# Subspace dimension via binary-search membership
+dim = find_maximum_subspace_dimension_lowmem(ss_ints, n)
+print(f"|S|={len(S_ints)}, |S+S|={len(ss_ints)}, max subspace dim={dim}")
+```
+
+**Iterate over F_p^n without loading it all:**
+
+```python
+from ffspaces import generate_space_chunked
+
+# Process F_2^28 (268 M vectors) 16 384 rows at a time
+count = 0
+for chunk in generate_space_chunked(28, chunk_size=1 << 14):
+    count += len(chunk)   # chunk is a (≤16384, 28) int8 array
+print(count)  # 268435456
+```
+
+## Command-line interface
+
+After `pip install ffspaces`, the `ffspaces` command is available in your shell.
+
+### `ffspaces run` — $k$-balls covering experiment
+
+Generates $K$ random Hamming balls in $\mathbb{F}_p^n$, computes the complement $S$, and finds the maximum linear-subspace dimension in $S+S$.
+
+```
+usage: ffspaces run [--n N] [--k K] [--radius R] [--p P]
+                   [--trials T] [--seed S] [--jobs J]
+                   [--low-memory] [--exhaustive]
+                   [--output FILE] [--no-progress]
+```
+
+**Standard mode** (fast; fine for $n \le 20$):
+
+```bash
+ffspaces run --n 16 --k 3 --radius 2 --trials 500 --seed 0
+```
+
+**Low-memory mode** (required for $n > 20$ on most machines):
+
+```bash
+ffspaces run --n 25 --k 3 --radius 1 --trials 200 --low-memory
+ffspaces run --n 28 --k 4 --radius 1 --trials 50  --low-memory --jobs 4
+ffspaces run --n 25 --k 3 --radius 1 --trials 100 --low-memory --output results.npz
+```
+
+Both modes produce **identical results for the same `--seed`**. With `--low-memory` a per-trial memory estimate is printed before the run begins.
+
+Key options:
+
+| Option | Default | Description |
+|---|---|---|
+| `--n` | 8 | Dimension of $\mathbb{F}_p^n$ |
+| `--k` | 3 | Number of Hamming balls |
+| `--radius` | 1 | Ball radius |
+| `--p` | 2 | Field characteristic |
+| `--trials` | 100 | Number of random trials |
+| `--seed` | 0 | Master random seed |
+| `--jobs` | 1 | Parallel workers |
+| `--low-memory` | off | Use memory-efficient path |
+| `--exhaustive` | off | Exhaustive subspace search |
+| `--output` | — | Save results (`.npz` or `.json`) |
+
+### `ffspaces memory-check` — RAM estimates
+
+Print estimated peak memory for both standard and low-memory modes before committing to a long run.
+
+```bash
+ffspaces memory-check --n 24 28 30
+```
+
+```
+── n=28, p=2 ──
+  generate_space (standard)               7.52 GB  ███████████████
+  compute_sumset (standard FFT)          17.18 GB  ███████████████████████████████
+  compute_sumset (low-memory FWHT)        3.22 GB  ██████  ← low-mem
+  complement bool mask (low-mem)          0.27 GB  █       ← low-mem
+  S integer array (worst case)            1.07 GB  ██
+  sumset integer array (worst case)       2.15 GB  ████
+```
+
 ## Mathematical background
 
 This package works in the vector space $\mathbb{F}_p^n$, where each coordinate is taken modulo a prime $p$. In particular, $\mathbb{F}_2^n$ is the set of binary vectors of length $n$, with addition done coordinatewise modulo $2$.
@@ -128,28 +272,25 @@ This package works in the vector space $\mathbb{F}_p^n$, where each coordinate i
 - **Why does this matter?** These objects are central in additive combinatorics, coding theory, and discrete geometry, and they provide a natural setting for studying how small sets expand under addition or how geometric configurations cover a space.
 
 
-## Quick example
+## ⚠️ Performance & scale
 
-```python
-import numpy as np
-from ffspaces import generate_space, compute_sumset, find_maximum_subspace_dimension
+Memory consumption scales exponentially with $n$: the universe has $p^n$ vectors, and most dense operations allocate arrays of that size.
 
-space = generate_space(3, p=2)
-subset = space[[0, 1, 2, 4]]
-sumset = compute_sumset(subset, p=2)
-dimension = find_maximum_subspace_dimension(sumset, p=2)
-print(dimension)
-```
+| Range | Standard mode | Low-memory mode |
+|---|---|---|
+| $n \le 16$, $p=2$ | Near-instant, <1 GB | — |
+| $16 < n \le 22$, $p=2$ | Gigabytes of RAM, may be slow | Not required |
+| $22 < n \le 28$, $p=2$ | Likely OOM | Feasible with ≥4–8 GB RAM |
+| $28 < n \le 32$, $p=2$ | OOM on most machines | Needs 16–64 GB RAM |
+| $n > 32$, $p=2$ | Infeasible | Multi-day runtime; server class |
 
-## ⚠️ Performance & Scale Warning (Memory Constraints)
+The **low-memory mode** reduces peak RAM by 5–50× relative to the standard path by:
+- Replacing the complex128 FFT with a real float64 in-place FWHT for sumset computation.
+- Generating Hamming balls combinatorially without loading the full universe.
+- Using a 1-byte boolean mask for complement instead of an 8-byte int64 array.
+- Using sorted-array binary search for subspace-dimension membership instead of Python tuple sets.
 
-Because `ffspaces` materializes entire vector spaces and handles dense arrays for operations like the Fast Walsh-Hadamard Transform (FWHT), memory consumption scales **exponentially** with the dimension $n$ and prime characteristic $p$ ($p^n$ rows). 
-
-- **Safe Range ($n \le 16$ for $p=2$):** Optimized for fast, small-to-medium computational experiments in additive combinatorics or discrete geometry. Operations will be near-instantaneous.
-- **Caution Range ($16 < n \le 22$ for $p=2$):** Memory footprints grow significantly. Functions like `generate_space` or `compute_sumset` will consume gigabytes of RAM.
-- **High Dimensions ($n > 22$ for $p=2$):** Attempting to generate the full space or compute dense transforms will likely result in a system Out-Of-Memory (OOM) crash. 
-
-Always consider the size of $p^n$ relative to your available hardware before running unconstrained space generations.
+Run `ffspaces memory-check --n <N>` to see per-operation estimates before starting a long job.
 
 ## Experiments
 
