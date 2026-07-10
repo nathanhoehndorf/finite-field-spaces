@@ -1,5 +1,48 @@
 # Changelog
 
+## [0.3.1] - 2026-07-10
+
+### Fixed
+- `generate_covering` now raises `ValueError` when `universe=None` and `p != 2`;
+  previously the call silently crashed with an uninformative `TypeError`.
+- `generate_hamming_ball` now accepts `linear_transform=None` (treated as the
+  identity); previously `None` caused an `AttributeError`.
+- `fwht` docstring incorrectly described the function as "in-place"; it has
+  always returned a new array. Docstring corrected.
+- `fwht` used `int(np.log2(n))` for power-of-2 detection, which is susceptible
+  to floating-point rounding on very large inputs. Replaced with
+  `n.bit_length() - 1`.
+- `_find_maximum_subspace_dimension_greedy` and
+  `find_maximum_subspace_dimension_lowmem` each rebuilt the full span of
+  accepted generators from scratch on every candidate check. Both now maintain
+  the span incrementally, extending it only when a generator is accepted.
+- `find_maximum_subspace_dimension_lowmem` recomputed the integer-encoding
+  powers array on every `in_ss` call; the array is now precomputed once.
+- `_run_trial_lowmem` had identical `elif exhaustive` / `else` branches;
+  collapsed to a single `else`.
+- `--jobs` now validates that the value is at least 1 and exits with a clear
+  error message if not.
+- `complement` removed a broad `except Exception` fallback that wrapped
+  unreachable dead code; replaced with a direct `np.isin` call.
+
+### Changed
+- `generate_hamming_ball`: `linear_transform` is now `Optional[np.ndarray] = None`.
+- `_generate_weight_ball` in `covers.py` removed; `generate_standard_ball` from
+  `geometries.py` is used directly, eliminating the duplicate implementation.
+- Dead variables `universe_size` (in `compute_sumset_fwht`) and `center_int`
+  (in `generate_ball_ints_lowmem`) removed.
+- `_compute_sumset_original` and `compare_sumset_methods` removed from
+  `__init__.py` exports and `__all__`; both remain accessible via
+  `ffspaces.operators` for internal use and tests.
+- Exhaustive subspace search: moved `nonzero_rows` computation outside the
+  per-dimension loop; removed a redundant all-zeros special case in the inner
+  loop.
+- Docstrings for `generate_space_chunked` and `_fwht_inplace` trimmed.
+- `estimate_memory_gb`: documented the 1.5× factor in the FWHT peak estimate.
+- `test_fwht_sumset_equivalence.py` converted from `unittest.TestCase` to plain
+  pytest functions, consistent with the rest of the test suite.
+- Bumped version from `0.3.0` to `0.3.1` in `pyproject.toml`.
+
 ## [0.3.0] - 2026-07-09
 
 ### Added
