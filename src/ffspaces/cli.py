@@ -76,9 +76,8 @@ def _run_trial_lowmem(
 
     N = 1 << n  # universe size (p=2 only)
 
-    # Generate bases and centers using the same RNG call order and call shapes as
-    # generate_space() yields vectors in integer order (universe[i] ==
-    # ints_to_vectors([i], n)), so rng.integers(0, N) maps to the same vector.
+    # Generate bases and centers in the same RNG call order as _run_trial_standard
+    # so that results are directly comparable for the same seed.
     bases = [generate_random_basis(n, p, rng=rng) for _ in range(k)]
 
     from ffspaces.fwht_operators import ints_to_vectors
@@ -98,9 +97,6 @@ def _run_trial_lowmem(
 
         if len(sumset_ints) == N:
             max_dim = n
-        elif exhaustive:
-            # Exhaustive search not yet implemented in lowmem path; use greedy.
-            max_dim = find_maximum_subspace_dimension_lowmem(sumset_ints, n, p=p)
         else:
             max_dim = find_maximum_subspace_dimension_lowmem(sumset_ints, n, p=p)
 
@@ -116,6 +112,10 @@ def _cmd_run(args: argparse.Namespace) -> None:
     exhaustive = args.exhaustive
     jobs = args.jobs
     output = args.output
+
+    if jobs < 1:
+        print("ERROR: --jobs must be at least 1", file=sys.stderr)
+        sys.exit(1)
 
     if not low_memory and n > 20:
         print(

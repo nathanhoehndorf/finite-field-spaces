@@ -13,7 +13,7 @@ def generate_space(n: int, p: int = 2) -> np.ndarray:
 
 def rank_mod_p(matrix, p: int = 2) -> int:
     """
-    Computes the rank of `matrix` over the finite field F_p using Guassian elimination
+    Computes the rank of `matrix` over the finite field F_p using Gaussian elimination
     with modular arithmetic. Works for any prime p; matrix need not be square
     """
     if p<=1:
@@ -68,8 +68,4 @@ def generate_random_basis(n: int, p: int = 2, rng=None) -> np.ndarray:
         matrix = rng.integers(0, p, size=(n, n)).astype(np.int8)
         if is_invertible(matrix, p):
             return matrix
-        
 
-
-
-            

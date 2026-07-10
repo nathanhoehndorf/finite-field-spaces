@@ -42,11 +42,12 @@ def ints_to_vectors(ints: np.ndarray, n: int, p: int = 2) -> np.ndarray:
 
 def fwht(a: np.ndarray) -> np.ndarray:
     """
-    In-place Fast Walsh-Hadamard Transform of 1d array `a`.
-    Array size must be exactly 2^n. Fully vectorized in NumPy.
+    Fast Walsh-Hadamard Transform of 1d array `a`.
+    Returns a new float64 array. Array size must be exactly 2^n.
+    Fully vectorized in NumPy.
     """
     n_elements = len(a)
-    n_bits = int(np.log2(n_elements))
+    n_bits = n_elements.bit_length() - 1
 
     if 1 << n_bits != n_elements:
         raise ValueError("Array length must be a power of 2")
@@ -80,7 +81,6 @@ def compute_sumset_fwht(set_elements: np.ndarray, p: int = 2) -> np.ndarray:
         raise ValueError("p must be at least 2")
 
     n = set_elements.shape[1]
-    universe_size = p ** n
 
     ints = vectors_to_ints(set_elements, p=p)
 

@@ -3,24 +3,7 @@ from typing import Optional, Sequence
 import numpy as np
 
 from .fwht_operators import vectors_to_ints
-from .geometries import generate_hamming_ball
-
-
-def _generate_weight_ball(n: int, radius: int) -> np.ndarray:
-    """
-    Generate all binary vectors in F_2^n with Hamming weight <= radius.
-    """
-    import itertools
-
-    vectors = []
-    for weight in range(radius + 1):
-        for combo in itertools.combinations(range(n), weight):
-            vec = np.zeros(n, dtype=np.int8)
-            vec[list(combo)] = 1
-            vectors.append(vec)
-    if len(vectors) == 0:
-        return np.empty((0, n), dtype=np.int8)
-    return np.array(vectors, dtype=np.int8)
+from .geometries import generate_hamming_ball, generate_standard_ball
 
 
 def generate_covering(
@@ -52,6 +35,12 @@ def generate_covering(
     centers = [np.array(c, dtype=np.int8) for c in centers]
     n = centers[0].size if len(centers) > 0 else 0
 
+    if universe is None and p != 2:
+        raise ValueError(
+            "A universe array is required for p != 2. "
+            "Build one with generate_space(n, p) and pass it as universe=."
+        )
+
     covered_ints = None
     covered_rows = []
 
@@ -59,7 +48,7 @@ def generate_covering(
         weight_balls = {}
         for c, r, B in zip(centers, radii, bases):
             if r not in weight_balls:
-                weight_balls[r] = _generate_weight_ball(n, r)
+                weight_balls[r] = generate_standard_ball(n, r)
             W_r = weight_balls[r]
             if B is None:
                 A = W_r.copy()
@@ -108,13 +97,6 @@ def complement(universe: np.ndarray, covered: np.ndarray) -> np.ndarray:
     if len(covered) == 0:
         return universe.copy()
 
-    n = universe.shape[1]
-    try:
-        covered_ints = vectors_to_ints(covered)
-        universe_ints = vectors_to_ints(universe)
-        covered_set = set(covered_ints.tolist())
-        mask = [i not in covered_set for i in universe_ints.tolist()]
-        return universe[np.array(mask, dtype=bool)]
-    except Exception:
-        covered_set = {tuple(row) for row in covered}
-        return np.array([row for row in universe if tuple(row) not in covered_set], dtype=np.int8)
+    universe_ints = vectors_to_ints(universe)
+    covered_ints = vectors_to_ints(covered)
+    return universe[~np.isin(universe_ints, covered_ints)]

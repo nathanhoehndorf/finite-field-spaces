@@ -1,4 +1,5 @@
 import itertools
+from typing import Optional
 
 import numpy as np
 
@@ -28,19 +29,19 @@ def generate_hamming_ball(
     universe: np.ndarray,
     center: np.ndarray,
     radius: int,
-    linear_transform: np.ndarray,
+    linear_transform: Optional[np.ndarray] = None,
     p: int = 2,
 ) -> np.ndarray:
     """
     Generates a Hamming ball centered at `center` with a given `radius`
-    under the basis defined by `linear_transform` over F_p^n.
-
-    B_{L}(v, r)= { x in F_p^n : weight( L(x-v) mod p ) <= r }
+    over F_p^n. If `linear_transform` is provided, distances are measured
+    in the transformed basis: B_L(v, r) = {x : weight(L(x-v) mod p) <= r}.
     """
     shifted = (universe - center) % p
-    transformed = (shifted @ linear_transform.T) % p
+    if linear_transform is not None:
+        shifted = (shifted @ linear_transform.T) % p
 
-    weights = compute_hamming_weight(transformed)
+    weights = compute_hamming_weight(shifted)
     mask = weights <= radius
 
     return universe[mask]

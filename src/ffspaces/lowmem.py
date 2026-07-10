@@ -21,11 +21,7 @@ def generate_space_chunked(
     p: int = 2,
     chunk_size: int = 1 << 14,
 ) -> Generator[np.ndarray, None, None]:
-    """Yield F_p^n in successive chunks without ever materialising the full space.
-
-    For p==2 each chunk is produced via integer enumeration + ints_to_vectors,
-    which avoids all Python-level per-vector iteration.  For general p we use
-    itertools.product batched into arrays.
+    """Yield F_p^n in successive chunks without materialising the full space.
 
     Args:
         n: Dimension of the space.
@@ -50,16 +46,10 @@ def generate_space_chunked(
 
 
 def _fwht_inplace(a: np.ndarray) -> None:
-    """In-place Walsh-Hadamard Transform of 1-D array ``a``.
+    """In-place Walsh-Hadamard Transform of 1-D float64 array ``a`` (length 2^k).
 
-    ``a`` must be float64 (dtype checked implicitly by in-place operations)
-    and have length exactly 2^k for some integer k.
-
-    Each stage allocates one N/2-element temporary that is released before the
-    next stage, so peak overhead is N/2 × 8 bytes (half the array size).
-
-    This is equivalent to ``fwht_operators.fwht`` but modifies ``a`` directly
-    and avoids the initial full-array copy, saving N × 8 bytes of peak RAM.
+    Equivalent to ``fwht_operators.fwht`` but modifies ``a`` directly,
+    avoiding the initial full-array copy. Peak overhead per stage: N/2 × 8 bytes.
     """
     N = len(a)
     k = N.bit_length() - 1
@@ -216,7 +206,6 @@ def generate_ball_ints_lowmem(
 
     center = np.asarray(center, dtype=np.int8)
     powers = np.int64(2) ** np.arange(n - 1, -1, -1, dtype=np.int64)
-    center_int = int(np.dot(center.astype(np.int64), powers))
 
     ints_list: list[int] = []
     for offset in _ball_offsets_p2(n, radius, linear_transform):
@@ -326,33 +315,24 @@ def find_maximum_subspace_dimension_lowmem(
     while p ** (max_possible_d + 1) <= n_ss and max_possible_d < n:
         max_possible_d += 1
 
+    powers = p ** np.arange(n - 1, -1, -1, dtype=np.int64)
+
     def in_ss(vec: np.ndarray) -> bool:
-        val = int(np.dot(vec.astype(np.int64),
-                         p ** np.arange(n - 1, -1, -1, dtype=np.int64)))
-        return _in_sorted(ss, val)
+        return _in_sorted(ss, int(np.dot(vec.astype(np.int64), powers)))
 
     generators: list[np.ndarray] = []
+    current_span: list[np.ndarray] = [np.zeros(n, dtype=np.int8)]
 
     for cand_int in ss:
         cand = ints_to_vectors(np.array([cand_int], dtype=np.int64), n, p)[0]
         if np.all(cand == 0):
             continue
 
-        # Build current span of existing generators
-        current_span: list[np.ndarray] = [np.zeros(n, dtype=np.int8)]
-        for gen in generators:
-            current_span += [
-                (gen * k + s) % p
-                for k in range(1, p)
-                for s in current_span
-            ]
-
-        # Check: does adding cand keep the new span inside S+S?
+        # Check: does adding cand keep the extended span inside S+S?
         valid = True
         for s in current_span:
             for k in range(1, p):
-                test_vec = (s + k * cand) % p
-                if not in_ss(test_vec):
+                if not in_ss((s + k * cand) % p):
                     valid = False
                     break
             if not valid:
@@ -367,6 +347,8 @@ def find_maximum_subspace_dimension_lowmem(
             if rank_mod_p(mat, p) != len(generators) + 1:
                 continue
 
+        # Accept: extend the maintained span.
+        current_span += [(cand * k + s) % p for k in range(1, p) for s in current_span]
         generators.append(cand)
 
     return len(generators)
@@ -380,6 +362,7 @@ def estimate_memory_gb(n: int, p: int = 2) -> dict[str, float]:
     universe_size = float(p ** n)
 
     return {
+        # indicator (N float64) + one N/2 temp per FWHT stage = 1.5 × N × 8 bytes
         "compute_sumset_lowmem_GB": universe_size * 8 * 1.5 / 1e9,
         "complement_bool_mask_GB": universe_size * 1 / 1e9,
         "S_ints_worst_case_GB": universe_size * 0.5 * 8 / 1e9,

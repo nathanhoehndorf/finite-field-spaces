@@ -54,34 +54,43 @@ def compare_sumset_methods(n: int = 6, subset_size: int = 10, seed: Optional[int
 
 
 def _find_maximum_subspace_dimension_greedy(sumset: np.ndarray, p: int = 2) -> int:
-    """Greedily build a maximal set of independent generators whose span is contained in sumset."""
+    """Greedily build a maximal linearly independent set whose span is contained in sumset.
+
+    The span of accepted generators is maintained incrementally: when a new
+    generator is accepted it is extended once, rather than rebuilt from scratch
+    for every candidate.
+    """
     n = sumset.shape[1]
     sumset_set = {tuple(row) for row in sumset}
-    independent_generators = []
+    independent_generators: list = []
+    current_span = [np.zeros(n, dtype=np.int8)]
 
     for candidate in sumset:
         if np.all(candidate == 0):
             continue
 
-        valid_generator = True
-        current_span = [np.zeros(n, dtype=np.int8)]
-
-        for gen in independent_generators:
-            current_span += [(gen * k + s) % p for k in range(1, p) for s in current_span]
-
-        for vec in current_span:
+        # Check whether the span extended by `candidate` stays inside sumset.
+        valid = True
+        for s in current_span:
             for k in range(1, p):
-                test_vec = (vec + k * candidate) % p
-                if tuple(test_vec) not in sumset_set:
-                    valid_generator = False
+                if tuple((s + k * candidate) % p) not in sumset_set:
+                    valid = False
                     break
-            if not valid_generator:
+            if not valid:
                 break
 
-        if valid_generator:
+        if not valid:
+            continue
+
+        # Check linear independence before accepting.
+        if independent_generators:
             test_matrix = np.array(independent_generators + [candidate])
-            if rank_mod_p(test_matrix, p) == len(independent_generators) + 1:
-                independent_generators.append(candidate)
+            if rank_mod_p(test_matrix, p) != len(independent_generators) + 1:
+                continue
+
+        # Accept: extend the maintained span with the new generator.
+        current_span += [(candidate * k + s) % p for k in range(1, p) for s in current_span]
+        independent_generators.append(candidate)
 
     return len(independent_generators)
 
@@ -116,8 +125,8 @@ def find_maximum_subspace_dimension(
 
     if exhaustive:
         checked_combinations = 0
+        nonzero_rows = [row for row in sumset if not np.all(row == 0)]
         for d in range(max_possible_d, 0, -1):
-            nonzero_rows = [row for row in sumset if not np.all(row == 0)]
             for combo in combinations(nonzero_rows, d):
                 if max_combinations is not None and checked_combinations >= max_combinations:
                     return greedy_dimension
@@ -129,12 +138,8 @@ def find_maximum_subspace_dimension(
 
                 all_in_sumset = True
                 for coeffs in product(range(p), repeat=d):
-                    if all(c == 0 for c in coeffs):
-                        vec = tuple(np.zeros(n, dtype=np.int8))
-                    else:
-                        vec_arr = sum((coeffs[i] * mat[i]) for i in range(d)) % p
-                        vec = tuple(vec_arr.astype(np.int8))
-                    if vec not in sumset_set:
+                    vec_arr = sum(coeffs[i] * mat[i] for i in range(d)) % p
+                    if tuple(vec_arr.astype(np.int8)) not in sumset_set:
                         all_in_sumset = False
                         break
 
